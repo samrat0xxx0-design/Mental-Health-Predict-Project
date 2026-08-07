@@ -1,4 +1,5 @@
 import joblib
+from pathlib import Path
 import pandas as pd
 from fastapi import FastAPI
 from pydantic import BaseModel, Field
@@ -6,8 +7,11 @@ from typing import Literal
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 
+# Get directory path where main.py resides
+BASE_DIR = Path(__file__).resolve().parent
+
 # Load model
-model = joblib.load("Mental_Health_Model.pkl")
+model = joblib.load(BASE_DIR / "Mental_Health_Model.pkl")
 
 # Countries that get their own bucket; everything else becomes "Other"
 top_countries = [
@@ -49,10 +53,11 @@ class StudentData(BaseModel):
 class PredictionResponse(BaseModel):
     predicted_mental_health_score: float
 
-# Serve the HTML page
+# Serve the HTML page using your exact repository filename ("Mental Heath.html")
 @app.get("/")
 def home():
-    return FileResponse("index.html")
+    html_file = BASE_DIR / "Mental Heath.html"
+    return FileResponse(html_file)
 
 # Prediction endpoint
 @app.post("/predict", response_model=PredictionResponse)
