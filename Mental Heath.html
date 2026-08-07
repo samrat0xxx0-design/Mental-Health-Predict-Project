@@ -1,0 +1,1208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MindMetric — Mental Health Score Predictor</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --navy: #0a0e1a;
+    --navy2: #0d1a2e;
+    --card: rgba(255,255,255,0.05);
+    --card-border: rgba(255,255,255,0.10);
+    --card-hover: rgba(255,255,255,0.08);
+    --cyan: #00d4aa;
+    --cyan2: #00b8ff;
+    --rose: #ff6b8a;
+    --amber: #ffb347;
+    --text: #e8f0fe;
+    --muted: rgba(232,240,254,0.55);
+    --input-bg: rgba(255,255,255,0.07);
+    --input-border: rgba(255,255,255,0.14);
+    --input-focus: rgba(0,212,170,0.5);
+    --radius: 14px;
+    --score-excellent: #00d4aa;
+    --score-good: #4fc3f7;
+    --score-moderate: #ffb347;
+    --score-poor: #ff6b8a;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    background: var(--navy);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+    line-height: 1.6;
+  }
+
+  /* Particles canvas */
+  #particles {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.45;
+  }
+
+  /* Gradient orbs */
+  .orb {
+    position: fixed;
+    border-radius: 50%;
+    filter: blur(90px);
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.18;
+  }
+  .orb-1 { width: 500px; height: 500px; background: #00d4aa; top: -100px; right: -100px; }
+  .orb-2 { width: 400px; height: 400px; background: #4fc3f7; bottom: -100px; left: -100px; }
+  .orb-3 { width: 300px; height: 300px; background: #7c5cbf; top: 50%; left: 50%; transform: translate(-50%,-50%); }
+
+  /* Layout */
+  .shell {
+    position: relative;
+    z-index: 1;
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 24px 60px;
+  }
+
+  /* Header */
+  header {
+    padding: 32px 0 48px;
+    text-align: center;
+  }
+
+  .logo-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(0,212,170,0.12);
+    border: 1px solid rgba(0,212,170,0.3);
+    border-radius: 100px;
+    padding: 6px 18px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--cyan);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    margin-bottom: 20px;
+  }
+
+  .pulse-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--cyan);
+    animation: pulse-ring 2s infinite;
+  }
+
+  @keyframes pulse-ring {
+    0% { box-shadow: 0 0 0 0 rgba(0,212,170,0.6); }
+    70% { box-shadow: 0 0 0 8px rgba(0,212,170,0); }
+    100% { box-shadow: 0 0 0 0 rgba(0,212,170,0); }
+  }
+
+  h1 {
+    font-size: clamp(28px, 5vw, 48px);
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    line-height: 1.15;
+    background: linear-gradient(135deg, #e8f0fe 0%, #00d4aa 60%, #4fc3f7 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 14px;
+  }
+
+  .subtitle {
+    color: var(--muted);
+    font-size: 16px;
+    max-width: 500px;
+    margin: 0 auto;
+  }
+
+  /* Grid */
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr 400px;
+    gap: 24px;
+    align-items: start;
+  }
+
+  @media (max-width: 860px) {
+    .grid { grid-template-columns: 1fr; }
+    .result-panel { order: -1; }
+  }
+
+  /* Card */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    border-radius: 20px;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    padding: 28px;
+    transition: border-color 0.3s;
+  }
+
+  .card:hover { border-color: rgba(255,255,255,0.18); }
+
+  .card-title {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--cyan);
+    margin-bottom: 22px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .card-title::before {
+    content: '';
+    display: block;
+    width: 3px;
+    height: 14px;
+    background: var(--cyan);
+    border-radius: 2px;
+  }
+
+  /* Form sections */
+  .form-section {
+    margin-bottom: 28px;
+  }
+
+  .section-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--muted);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-bottom: 14px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(255,255,255,0.07);
+  }
+
+  .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-bottom: 14px;
+  }
+
+  .form-row.single { grid-template-columns: 1fr; }
+
+  @media (max-width: 540px) {
+    .form-row { grid-template-columns: 1fr; }
+  }
+
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+  }
+
+  label {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--muted);
+    letter-spacing: 0.02em;
+  }
+
+  select, input[type="number"] {
+    background: var(--input-bg);
+    border: 1px solid var(--input-border);
+    border-radius: 10px;
+    color: var(--text);
+    font-size: 14px;
+    padding: 10px 14px;
+    width: 100%;
+    transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+    appearance: none;
+    -webkit-appearance: none;
+    outline: none;
+  }
+
+  select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%2300d4aa' stroke-width='1.8' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+    padding-right: 38px;
+    cursor: pointer;
+  }
+
+  select option {
+    background: #0d1a2e;
+    color: var(--text);
+  }
+
+  select:focus, input[type="number"]:focus {
+    border-color: var(--cyan);
+    background: rgba(0,212,170,0.06);
+    box-shadow: 0 0 0 3px rgba(0,212,170,0.15);
+  }
+
+  select:hover, input[type="number"]:hover {
+    border-color: rgba(255,255,255,0.25);
+  }
+
+  /* Slider field */
+  .slider-field {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+  }
+
+  .slider-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .slider-value {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--cyan);
+    min-width: 36px;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .slider-track {
+    position: relative;
+    height: 36px;
+    display: flex;
+    align-items: center;
+  }
+
+  input[type="range"] {
+    -webkit-appearance: none;
+    width: 100%;
+    height: 4px;
+    border-radius: 2px;
+    background: rgba(255,255,255,0.12);
+    outline: none;
+    cursor: pointer;
+    position: relative;
+  }
+
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--cyan);
+    box-shadow: 0 0 0 3px rgba(0,212,170,0.25);
+    cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+
+  input[type="range"]::-webkit-slider-thumb:hover {
+    transform: scale(1.2);
+    box-shadow: 0 0 0 6px rgba(0,212,170,0.2);
+  }
+
+  input[type="range"]::-moz-range-thumb {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--cyan);
+    border: none;
+    cursor: pointer;
+  }
+
+  /* Submit button */
+  .btn-predict {
+    width: 100%;
+    padding: 15px;
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    color: #0a0e1a;
+    background: linear-gradient(135deg, #00d4aa, #00b8ff);
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.15s, opacity 0.15s;
+    position: relative;
+    overflow: hidden;
+    margin-top: 8px;
+  }
+
+  .btn-predict::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(255,255,255,0.2), rgba(255,255,255,0));
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+
+  .btn-predict:hover { transform: translateY(-1px); box-shadow: 0 8px 30px rgba(0,212,170,0.35); }
+  .btn-predict:hover::before { opacity: 1; }
+  .btn-predict:active { transform: translateY(0) scale(0.99); }
+  .btn-predict:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+  .btn-inner {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+  }
+
+  /* Spinner */
+  .spinner {
+    width: 18px; height: 18px;
+    border: 2px solid rgba(0,0,0,0.25);
+    border-top-color: #0a0e1a;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    display: none;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Result panel */
+  .result-panel {
+    position: sticky;
+    top: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  @media (max-width: 860px) {
+    .result-panel { position: static; }
+  }
+
+  /* Gauge card */
+  .gauge-card {
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    border-radius: 20px;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    padding: 28px 24px 22px;
+    text-align: center;
+    transition: border-color 0.5s;
+  }
+
+  .gauge-wrap {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+
+  #gauge-svg { overflow: visible; }
+
+  .score-display {
+    position: absolute;
+    text-align: center;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -38%);
+  }
+
+  .score-number {
+    font-size: 48px;
+    font-weight: 800;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.03em;
+    transition: color 0.6s;
+    color: var(--cyan);
+  }
+
+  .score-denom {
+    font-size: 16px;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+
+  .status-badge {
+    display: inline-block;
+    padding: 6px 20px;
+    border-radius: 100px;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    transition: all 0.5s;
+    margin-bottom: 6px;
+  }
+
+  .status-text {
+    font-size: 13px;
+    color: var(--muted);
+  }
+
+  /* Status colors */
+  .status-excellent { background: rgba(0,212,170,0.15); color: #00d4aa; }
+  .status-good { background: rgba(79,195,247,0.15); color: #4fc3f7; }
+  .status-moderate { background: rgba(255,179,71,0.15); color: #ffb347; }
+  .status-poor { background: rgba(255,107,138,0.15); color: #ff6b8a; }
+
+  /* Idle state */
+  .idle-msg {
+    font-size: 13px;
+    color: var(--muted);
+    margin-top: 6px;
+  }
+
+  /* Recommendations */
+  .rec-card {
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    border-radius: 20px;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    padding: 22px;
+    transition: border-color 0.3s;
+  }
+
+  .rec-card-title {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .rec-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 11px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    animation: fadeIn 0.4s ease both;
+  }
+
+  .rec-item:last-child { border-bottom: none; padding-bottom: 0; }
+
+  .rec-icon {
+    width: 34px; height: 34px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+
+  .rec-text {
+    flex: 1;
+    font-size: 13px;
+    color: var(--text);
+    line-height: 1.5;
+  }
+
+  .rec-text strong {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 2px;
+  }
+
+  .empty-recs {
+    text-align: center;
+    padding: 20px 0;
+    color: var(--muted);
+    font-size: 13px;
+  }
+
+  /* Metric strips */
+  .metric-strip {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 14px;
+  }
+
+  .metric-chip {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 12px;
+    padding: 12px;
+    text-align: center;
+  }
+
+  .metric-chip .val {
+    font-size: 20px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    color: var(--cyan);
+  }
+
+  .metric-chip .lbl {
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 2px;
+    letter-spacing: 0.04em;
+  }
+
+  /* Range indicators below sliders */
+  .range-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 10px;
+    color: rgba(232,240,254,0.3);
+    margin-top: 2px;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Loading overlay on gauge */
+  .gauge-loading {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(10,14,26,0.6);
+    border-radius: 20px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s;
+  }
+
+  .gauge-loading.active { opacity: 1; pointer-events: all; }
+
+  .loading-ring {
+    width: 48px; height: 48px;
+    border: 3px solid rgba(0,212,170,0.2);
+    border-top-color: var(--cyan);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+
+  /* Error toast */
+  .error-toast {
+    background: rgba(255,107,138,0.15);
+    border: 1px solid rgba(255,107,138,0.3);
+    border-radius: 12px;
+    padding: 12px 16px;
+    font-size: 13px;
+    color: #ff6b8a;
+    margin-top: 12px;
+    display: none;
+  }
+
+  /* Decorative header line */
+  .header-line {
+    width: 60px;
+    height: 3px;
+    background: linear-gradient(90deg, var(--cyan), var(--cyan2));
+    border-radius: 2px;
+    margin: 16px auto 0;
+  }
+
+  /* Footer */
+  footer {
+    text-align: center;
+    padding: 24px 0 8px;
+    font-size: 12px;
+    color: rgba(232,240,254,0.25);
+  }
+
+  /* Checkbox-style radio for gender */
+  .toggle-group {
+    display: flex;
+    gap: 10px;
+  }
+
+  .toggle-btn {
+    flex: 1;
+    padding: 10px;
+    background: var(--input-bg);
+    border: 1px solid var(--input-border);
+    border-radius: 10px;
+    color: var(--muted);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.2s;
+    user-select: none;
+  }
+
+  .toggle-btn.active {
+    border-color: var(--cyan);
+    background: rgba(0,212,170,0.1);
+    color: var(--cyan);
+  }
+
+  .toggle-btn:hover:not(.active) {
+    border-color: rgba(255,255,255,0.25);
+    color: var(--text);
+  }
+</style>
+</head>
+<body>
+
+<canvas id="particles"></canvas>
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+<div class="orb orb-3"></div>
+
+<div class="shell">
+  <header>
+    <div class="logo-pill"><span class="pulse-dot"></span>AI-Powered Assessment</div>
+    <h1>Mental Health Score<br>Predictor</h1>
+    <p class="subtitle">Understand how your digital habits affect your wellbeing — powered by machine learning.</p>
+    <div class="header-line"></div>
+  </header>
+
+  <div class="grid">
+    <!-- Form card -->
+    <div class="card">
+      <div class="card-title">Your Profile</div>
+
+      <form id="predict-form" autocomplete="off">
+
+        <!-- Demographics -->
+        <div class="form-section">
+          <div class="section-label">Demographics</div>
+
+          <div class="form-row">
+            <div class="field">
+              <label>Age</label>
+              <input type="number" id="age" min="10" max="100" value="20" placeholder="e.g. 20">
+            </div>
+            <div class="field">
+              <label>Academic Level</label>
+              <select id="academic_level">
+                <option value="High School">High School</option>
+                <option value="Undergraduate" selected>Undergraduate</option>
+                <option value="Graduate">Graduate</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="field" style="margin-bottom:14px">
+            <label>Gender</label>
+            <div class="toggle-group">
+              <div class="toggle-btn active" data-val="Male" onclick="selectToggle(this,'gender')">Male</div>
+              <div class="toggle-btn" data-val="Female" onclick="selectToggle(this,'gender')">Female</div>
+            </div>
+          </div>
+
+          <div class="form-row single">
+            <div class="field">
+              <label>Country</label>
+              <select id="country">
+                <option value="India">India</option>
+                <option value="USA">USA</option>
+                <option value="Canada">Canada</option>
+                <option value="Australia">Australia</option>
+                <option value="UK">UK</option>
+                <option value="Germany">Germany</option>
+                <option value="Mexico">Mexico</option>
+                <option value="Turkey">Turkey</option>
+                <option value="France">France</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Digital Habits -->
+        <div class="form-section">
+          <div class="section-label">Digital Habits</div>
+
+          <div class="form-row">
+            <div class="field">
+              <label>Most Used Platform</label>
+              <select id="most_used_platform">
+                <option value="Instagram">Instagram</option>
+                <option value="YouTube" selected>YouTube</option>
+                <option value="TikTok">TikTok</option>
+                <option value="Facebook">Facebook</option>
+                <option value="Twitter">Twitter</option>
+                <option value="LinkedIn">LinkedIn</option>
+                <option value="Snapchat">Snapchat</option>
+                <option value="WhatsApp">WhatsApp</option>
+                <option value="WeChat">WeChat</option>
+                <option value="LINE">LINE</option>
+                <option value="KakaoTalk">KakaoTalk</option>
+                <option value="VKontakte">VKontakte</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Purpose of Use</label>
+              <select id="purpose_of_use">
+                <option value="Entertainment" selected>Entertainment</option>
+                <option value="Education">Education</option>
+                <option value="Networking">Networking</option>
+                <option value="News">News</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="slider-field" style="margin-bottom:18px">
+            <div class="slider-header">
+              <label>Avg Daily Usage (hrs)</label>
+              <span class="slider-value" id="usage-val">3.0</span>
+            </div>
+            <div class="slider-track">
+              <input type="range" id="avg_daily_usage_hours" min="0" max="24" step="0.5" value="3"
+                oninput="document.getElementById('usage-val').textContent=parseFloat(this.value).toFixed(1)">
+            </div>
+            <div class="range-labels"><span>0h</span><span>12h</span><span>24h</span></div>
+          </div>
+
+          <div class="slider-field">
+            <div class="slider-header">
+              <label>Daily Unlocks</label>
+              <span class="slider-value" id="unlocks-val">30</span>
+            </div>
+            <div class="slider-track">
+              <input type="range" id="daily_unlocks" min="0" max="200" step="1" value="30"
+                oninput="document.getElementById('unlocks-val').textContent=this.value">
+            </div>
+            <div class="range-labels"><span>0</span><span>100</span><span>200+</span></div>
+          </div>
+        </div>
+
+        <!-- Lifestyle -->
+        <div class="form-section">
+          <div class="section-label">Lifestyle</div>
+
+          <div class="slider-field" style="margin-bottom:18px">
+            <div class="slider-header">
+              <label>Study Hours / Day</label>
+              <span class="slider-value" id="study-val">4.0</span>
+            </div>
+            <div class="slider-track">
+              <input type="range" id="study_hours" min="0" max="16" step="0.5" value="4"
+                oninput="document.getElementById('study-val').textContent=parseFloat(this.value).toFixed(1)">
+            </div>
+            <div class="range-labels"><span>0h</span><span>8h</span><span>16h</span></div>
+          </div>
+
+          <div class="slider-field" style="margin-bottom:18px">
+            <div class="slider-header">
+              <label>Physical Activity (hrs)</label>
+              <span class="slider-value" id="activity-val">1.0</span>
+            </div>
+            <div class="slider-track">
+              <input type="range" id="physical_activity_hours" min="0" max="8" step="0.5" value="1"
+                oninput="document.getElementById('activity-val').textContent=parseFloat(this.value).toFixed(1)">
+            </div>
+            <div class="range-labels"><span>0h</span><span>4h</span><span>8h</span></div>
+          </div>
+
+          <div class="slider-field" style="margin-bottom:18px">
+            <div class="slider-header">
+              <label>Sleep Hours / Night</label>
+              <span class="slider-value" id="sleep-val">7.0</span>
+            </div>
+            <div class="slider-track">
+              <input type="range" id="sleep_hours_per_night" min="0" max="12" step="0.5" value="7"
+                oninput="document.getElementById('sleep-val').textContent=parseFloat(this.value).toFixed(1)">
+            </div>
+            <div class="range-labels"><span>0h</span><span>6h</span><span>12h</span></div>
+          </div>
+
+          <div class="form-row single">
+            <div class="field">
+              <label>Stress Level</label>
+              <select id="stress_level">
+                <option value="Low">Low</option>
+                <option value="Medium" selected>Medium</option>
+                <option value="High">High</option>
+                <option value="Very High">Very High</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <button type="submit" class="btn-predict" id="submit-btn">
+          <div class="btn-inner">
+            <div class="spinner" id="spinner"></div>
+            <span id="btn-text">Analyze My Wellbeing</span>
+          </div>
+        </button>
+
+        <div class="error-toast" id="error-toast"></div>
+      </form>
+    </div>
+
+    <!-- Result panel -->
+    <div class="result-panel">
+
+      <!-- Gauge card -->
+      <div class="gauge-card" id="gauge-card">
+        <div class="card-title" style="justify-content:center; margin-bottom:16px;">Mental Health Score</div>
+
+        <div class="gauge-wrap">
+          <svg id="gauge-svg" viewBox="0 0 240 160" width="240" height="160">
+            <defs>
+              <linearGradient id="arcGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stop-color="#ff6b8a"/>
+                <stop offset="35%" stop-color="#ffb347"/>
+                <stop offset="65%" stop-color="#4fc3f7"/>
+                <stop offset="100%" stop-color="#00d4aa"/>
+              </linearGradient>
+              <filter id="glowFilter">
+                <feGaussianBlur stdDeviation="3" result="blur"/>
+                <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+              </filter>
+            </defs>
+
+            <!-- Background arc -->
+            <path d="M 24 148 A 96 96 0 0 1 216 148"
+              fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="14" stroke-linecap="round"/>
+
+            <!-- Colored arc (filled based on score) -->
+            <path id="gauge-arc"
+              d="M 24 148 A 96 96 0 0 1 216 148"
+              fill="none" stroke="url(#arcGrad)" stroke-width="14" stroke-linecap="round"
+              stroke-dasharray="302" stroke-dashoffset="302"
+              style="transition: stroke-dashoffset 1.2s cubic-bezier(0.34,1.56,0.64,1)"/>
+
+            <!-- Needle -->
+            <g id="needle-g" transform="rotate(-180, 120, 148)" style="transform-origin:120px 148px; transform-box:fill-box; transition: transform 1.2s cubic-bezier(0.34,1.56,0.64,1)">
+              <line id="needle-line" x1="120" y1="148" x2="120" y2="62"
+                stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" opacity="0.9"/>
+              <circle cx="120" cy="148" r="7" fill="#ffffff" opacity="0.95"/>
+              <circle cx="120" cy="148" r="4" fill="#0a0e1a"/>
+            </g>
+
+            <!-- Tick marks -->
+            <g id="ticks" stroke="rgba(255,255,255,0.2)" stroke-width="1.5">
+            </g>
+          </svg>
+
+          <div class="score-display">
+            <div class="score-number" id="score-number">—</div>
+            <div class="score-denom">out of 10</div>
+          </div>
+        </div>
+
+        <div id="status-badge" class="status-badge status-good" style="display:none"></div>
+        <p class="status-text" id="status-text"></p>
+        <p class="idle-msg" id="idle-msg">Fill in your profile and click Analyze to get your score.</p>
+
+        <!-- Metric chips (shown after prediction) -->
+        <div class="metric-strip" id="metric-strip" style="display:none">
+          <div class="metric-chip">
+            <div class="val" id="mc-usage">—</div>
+            <div class="lbl">Screen hrs/day</div>
+          </div>
+          <div class="metric-chip">
+            <div class="val" id="mc-sleep">—</div>
+            <div class="lbl">Sleep hrs/night</div>
+          </div>
+        </div>
+
+        <div class="gauge-loading" id="gauge-loading">
+          <div class="loading-ring"></div>
+        </div>
+      </div>
+
+      <!-- Recommendations card -->
+      <div class="rec-card" id="rec-card">
+        <div class="rec-card-title">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style="flex-shrink:0">
+            <circle cx="7" cy="7" r="6.5" stroke="currentColor" stroke-width="1.2"/>
+            <path d="M7 4v4M7 10v.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+          </svg>
+          Personalized Insights
+        </div>
+        <div id="recs-container">
+          <div class="empty-recs">Your recommendations will appear here after analysis.</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <footer>MindMetric · Powered by ML · Not a substitute for professional medical advice</footer>
+</div>
+
+<script>
+// Particles
+(function() {
+  const canvas = document.getElementById('particles');
+  const ctx = canvas.getContext('2d');
+  let W, H, pts;
+
+  function resize() {
+    W = canvas.width = window.innerWidth;
+    H = canvas.height = window.innerHeight;
+  }
+
+  function initPts() {
+    pts = Array.from({length: 55}, () => ({
+      x: Math.random() * W,
+      y: Math.random() * H,
+      r: Math.random() * 1.8 + 0.4,
+      vx: (Math.random() - 0.5) * 0.3,
+      vy: (Math.random() - 0.5) * 0.3,
+      a: Math.random() * 0.5 + 0.15
+    }));
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+    pts.forEach(p => {
+      p.x += p.vx; p.y += p.vy;
+      if (p.x < 0) p.x = W;
+      if (p.x > W) p.x = 0;
+      if (p.y < 0) p.y = H;
+      if (p.y > H) p.y = 0;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(0,212,170,${p.a})`;
+      ctx.fill();
+    });
+
+    // draw connecting lines
+    for (let i = 0; i < pts.length; i++) {
+      for (let j = i+1; j < pts.length; j++) {
+        const dx = pts[i].x - pts[j].x;
+        const dy = pts[i].y - pts[j].y;
+        const d = Math.sqrt(dx*dx + dy*dy);
+        if (d < 100) {
+          ctx.beginPath();
+          ctx.strokeStyle = `rgba(0,212,170,${0.06 * (1 - d/100)})`;
+          ctx.lineWidth = 0.5;
+          ctx.moveTo(pts[i].x, pts[i].y);
+          ctx.lineTo(pts[j].x, pts[j].y);
+          ctx.stroke();
+        }
+      }
+    }
+    requestAnimationFrame(draw);
+  }
+
+  resize();
+  initPts();
+  draw();
+  window.addEventListener('resize', () => { resize(); initPts(); });
+})();
+
+// Toggle buttons (gender)
+const toggleState = { gender: 'Male' };
+function selectToggle(el, group) {
+  document.querySelectorAll(`.toggle-btn[onclick*="${group}"]`).forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  toggleState[group] = el.dataset.val;
+}
+
+// Draw tick marks on gauge
+(function() {
+  const tickG = document.getElementById('ticks');
+  const cx = 120, cy = 148, r = 96;
+  for (let i = 0; i <= 10; i++) {
+    const ang = -180 + (i/10) * 180;
+    const rad = ang * Math.PI / 180;
+    const isMain = i % 5 === 0;
+    const r1 = r - (isMain ? 14 : 9);
+    const r2 = r - 20;
+    const x1 = cx + r * Math.cos(rad);
+    const y1 = cy + r * Math.sin(rad);
+    const x2 = cx + r1 * Math.cos(rad);
+    const y2 = cy + r1 * Math.sin(rad);
+    const line = document.createElementNS('http://www.w3.org/2000/svg','line');
+    line.setAttribute('x1', x1.toFixed(1));
+    line.setAttribute('y1', y1.toFixed(1));
+    line.setAttribute('x2', x2.toFixed(1));
+    line.setAttribute('y2', y2.toFixed(1));
+    line.setAttribute('stroke-width', isMain ? 1.8 : 1);
+    tickG.appendChild(line);
+  }
+})();
+
+// Animate gauge to a score
+function setGauge(score) {
+  const arc = document.getElementById('gauge-arc');
+  const needleG = document.getElementById('needle-g');
+  const scoreNum = document.getElementById('score-number');
+  const totalLen = 302;
+  const pct = Math.max(0, Math.min(10, score)) / 10;
+  const offset = totalLen * (1 - pct);
+  arc.style.strokeDashoffset = offset;
+
+  // Needle: -180deg (score=0) to 0deg (score=10)
+  const needleAngle = -180 + pct * 180;
+  needleG.style.transform = `rotate(${needleAngle}deg)`;
+
+  // Animate counter
+  const start = parseFloat(scoreNum.textContent) || 0;
+  const duration = 1200;
+  const startTime = performance.now();
+
+  function tick(now) {
+    const t = Math.min((now - startTime) / duration, 1);
+    const ease = 1 - Math.pow(1 - t, 3);
+    const cur = start + (score - start) * ease;
+    scoreNum.textContent = cur.toFixed(1);
+    if (t < 1) requestAnimationFrame(tick);
+    else scoreNum.textContent = score.toFixed(1);
+  }
+  requestAnimationFrame(tick);
+
+  // Color the score number
+  let col = '#00d4aa';
+  if (score >= 8) col = '#00d4aa';
+  else if (score >= 6) col = '#4fc3f7';
+  else if (score >= 4) col = '#ffb347';
+  else col = '#ff6b8a';
+  scoreNum.style.color = col;
+}
+
+function getStatusInfo(score) {
+  if (score >= 8) return { label: 'Excellent', cls: 'status-excellent', msg: 'Your digital habits support strong mental wellbeing. Keep it up!' };
+  if (score >= 6) return { label: 'Good', cls: 'status-good', msg: 'You\'re in good shape. A few tweaks could take you to excellent.' };
+  if (score >= 4) return { label: 'Moderate', cls: 'status-moderate', msg: 'There\'s room to improve. Small habit changes can make a big difference.' };
+  return { label: 'Needs Attention', cls: 'status-poor', msg: 'Your habits may be affecting your wellbeing. Consider the insights below.' };
+}
+
+function getRecommendations(data, score) {
+  const recs = [];
+
+  if (parseFloat(data.avg_daily_usage_hours) > 4) {
+    recs.push({ icon: '📱', color: 'rgba(255,107,138,0.15)', head: 'Reduce Screen Time', body: 'You\'re spending ' + data.avg_daily_usage_hours + ' hrs/day on social media. Try capping it at 2–3 hrs with app timers.' });
+  }
+  if (parseInt(data.daily_unlocks) > 80) {
+    recs.push({ icon: '🔔', color: 'rgba(255,179,71,0.15)', head: 'Control Notifications', body: 'Unlocking your phone ' + data.daily_unlocks + ' times a day fragments focus. Turn off non-essential notifications.' });
+  }
+  if (parseFloat(data.sleep_hours_per_night) < 7) {
+    recs.push({ icon: '😴', color: 'rgba(79,195,247,0.15)', head: 'Prioritize Sleep', body: 'You\'re averaging ' + data.sleep_hours_per_night + 'hrs of sleep. Aim for 7–9 hrs — sleep is foundational to mental health.' });
+  }
+  if (parseFloat(data.physical_activity_hours) < 1) {
+    recs.push({ icon: '🏃', color: 'rgba(0,212,170,0.15)', head: 'Move More', body: 'Even 30 minutes of daily movement reduces stress hormones and boosts mood significantly.' });
+  }
+  if (data.stress_level === 'High' || data.stress_level === 'Very High') {
+    recs.push({ icon: '🧘', color: 'rgba(124,92,191,0.2)', head: 'Manage Stress', body: 'Your stress level is ' + data.stress_level + '. Try 10-minute mindfulness sessions or deep breathing exercises daily.' });
+  }
+  if (data.purpose_of_use === 'Entertainment' && parseFloat(data.avg_daily_usage_hours) > 3) {
+    recs.push({ icon: '📚', color: 'rgba(255,179,71,0.12)', head: 'Use Screens Intentionally', body: 'Shifting some screen time from entertainment to education or social connection yields better wellbeing outcomes.' });
+  }
+  if (parseFloat(data.study_hours) < 2) {
+    recs.push({ icon: '🎯', color: 'rgba(79,195,247,0.12)', head: 'Build Study Consistency', body: 'Structured learning builds a sense of purpose and accomplishment — key drivers of positive mental health.' });
+  }
+  if (score >= 8 && recs.length === 0) {
+    recs.push({ icon: '⭐', color: 'rgba(0,212,170,0.15)', head: 'Sustain Your Habits', body: 'Your lifestyle is already well-balanced. Share your habits with peers and consider mentoring others.' });
+  }
+
+  return recs.slice(0, 4);
+}
+
+function renderRecs(recs) {
+  const container = document.getElementById('recs-container');
+  if (recs.length === 0) {
+    container.innerHTML = '<div class="empty-recs">Your habits look great! No major concerns detected.</div>';
+    return;
+  }
+  container.innerHTML = recs.map((r, i) =>
+    `<div class="rec-item" style="animation-delay:${i*80}ms">
+      <div class="rec-icon" style="background:${r.color}">${r.icon}</div>
+      <div class="rec-text"><strong>${r.head}</strong>${r.body}</div>
+    </div>`
+  ).join('');
+}
+
+// Form submit
+document.getElementById('predict-form').addEventListener('submit', async function(e) {
+  e.preventDefault();
+
+  const btn = document.getElementById('submit-btn');
+  const spinner = document.getElementById('spinner');
+  const btnText = document.getElementById('btn-text');
+  const errorToast = document.getElementById('error-toast');
+  const loading = document.getElementById('gauge-loading');
+
+  // Build payload
+  const payload = {
+    age: parseInt(document.getElementById('age').value) || 20,
+    gender: toggleState.gender,
+    country: document.getElementById('country').value,
+    academic_level: document.getElementById('academic_level').value,
+    most_used_platform: document.getElementById('most_used_platform').value,
+    purpose_of_use: document.getElementById('purpose_of_use').value,
+    avg_daily_usage_hours: parseFloat(document.getElementById('avg_daily_usage_hours').value),
+    daily_unlocks: parseInt(document.getElementById('daily_unlocks').value),
+    study_hours: parseFloat(document.getElementById('study_hours').value),
+    physical_activity_hours: parseFloat(document.getElementById('physical_activity_hours').value),
+    sleep_hours_per_night: parseFloat(document.getElementById('sleep_hours_per_night').value),
+    stress_level: document.getElementById('stress_level').value,
+  };
+
+  // UI loading state
+  btn.disabled = true;
+  spinner.style.display = 'block';
+  btnText.textContent = 'Analyzing…';
+  errorToast.style.display = 'none';
+  loading.classList.add('active');
+
+  try {
+    const response = await fetch('http://localhost:8000/predict', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    if (!response.ok) {
+      const errData = await response.json().catch(() => ({}));
+      throw new Error(errData.detail || `Server error ${response.status}`);
+    }
+
+    const data = await response.json();
+    const score = data.predicted_mental_health_score;
+
+    // Update gauge
+    loading.classList.remove('active');
+    document.getElementById('idle-msg').style.display = 'none';
+
+    const statusInfo = getStatusInfo(score);
+    const badge = document.getElementById('status-badge');
+    badge.style.display = 'inline-block';
+    badge.className = 'status-badge ' + statusInfo.cls;
+    badge.textContent = statusInfo.label;
+    document.getElementById('status-text').textContent = statusInfo.msg;
+
+    setGauge(score);
+
+    // Metric chips
+    document.getElementById('mc-usage').textContent = parseFloat(payload.avg_daily_usage_hours).toFixed(1);
+    document.getElementById('mc-sleep').textContent = parseFloat(payload.sleep_hours_per_night).toFixed(1);
+    document.getElementById('metric-strip').style.display = 'grid';
+
+    // Recommendations
+    const recs = getRecommendations(payload, score);
+    renderRecs(recs);
+
+  } catch (err) {
+    loading.classList.remove('active');
+    errorToast.style.display = 'block';
+    errorToast.textContent = '⚠ ' + (err.message.includes('Failed to fetch')
+      ? 'Cannot reach the API. Make sure the FastAPI server is running on localhost:8000.'
+      : err.message);
+  } finally {
+    btn.disabled = false;
+    spinner.style.display = 'none';
+    btnText.textContent = 'Analyze My Wellbeing';
+  }
+});
+</script>
+</body>
+</html>
