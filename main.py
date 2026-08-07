@@ -1,33 +1,23 @@
 import joblib
 import pandas as pd
-from pathlib import Path
-
 from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 from typing import Literal
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 
 # Load model
 model = joblib.load("Mental_Health_Model.pkl")
 
-# Countries that get their own bucket
+# Countries that get their own bucket; everything else becomes "Other"
 top_countries = [
-    "Other",
-    "India",
-    "USA",
-    "Canada",
-    "Australia",
-    "UK",
-    "Germany",
-    "Mexico",
-    "Turkey",
-    "France",
+    "Other", "India", "USA", "Canada", "Australia",
+    "UK", "Germany", "Mexico", "Turkey", "France"
 ]
 
 app = FastAPI()
 
-# Enable CORS
+# Allow frontend requests
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -36,36 +26,18 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Path to HTML file
-BASE_DIR = Path(__file__).resolve().parent
-
-
-# Input model
+# Request body
 class StudentData(BaseModel):
     age: int = Field(..., ge=10, le=100)
     gender: Literal["Male", "Female"]
     country: str
     academic_level: Literal["Undergraduate", "Graduate", "High School"]
     most_used_platform: Literal[
-        "Facebook",
-        "LinkedIn",
-        "Instagram",
-        "Snapchat",
-        "Twitter",
-        "YouTube",
-        "TikTok",
-        "LINE",
-        "KakaoTalk",
-        "VKontakte",
-        "WhatsApp",
-        "WeChat",
+        "Facebook", "LinkedIn", "Instagram", "Snapchat", "Twitter",
+        "YouTube", "TikTok", "LINE", "KakaoTalk", "VKontakte",
+        "WhatsApp", "WeChat"
     ]
-    purpose_of_use: Literal[
-        "Networking",
-        "Education",
-        "Entertainment",
-        "News",
-    ]
+    purpose_of_use: Literal["Networking", "Education", "Entertainment", "News"]
     avg_daily_usage_hours: float = Field(..., ge=0, le=24)
     daily_unlocks: int = Field(..., ge=0)
     study_hours: float = Field(..., ge=0, le=24)
@@ -73,27 +45,21 @@ class StudentData(BaseModel):
     sleep_hours_per_night: float = Field(..., ge=0, le=24)
     stress_level: Literal["Low", "Medium", "High", "Very High"]
 
-
-# Output model
+# Response body
 class PredictionResponse(BaseModel):
     predicted_mental_health_score: float
 
-
-# Serve HTML page
+# Serve the HTML page
 @app.get("/")
 def home():
-    html_file = BASE_DIR / "Mental Health.html"
-    return FileResponse(html_file)
-
+    return FileResponse("index.html")
 
 # Prediction endpoint
 @app.post("/predict", response_model=PredictionResponse)
 def predict(data: StudentData):
-
     grouped_country = (
         data.country if data.country in top_countries else "Other"
     )
-
     input_row = pd.DataFrame([{
         "Age": data.age,
         "Gender": data.gender,
@@ -108,9 +74,7 @@ def predict(data: StudentData):
         "Stress_Level": data.stress_level,
         "Grouped_Countries": grouped_country,
     }])
-
     prediction = model.predict(input_row)[0]
-
     return PredictionResponse(
         predicted_mental_health_score=round(float(prediction), 2)
     )
