@@ -4,6 +4,7 @@ from fastapi import FastAPI
 from pydantic import BaseModel, Field
 from typing import Literal
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 
 # Load model
 model = joblib.load("Mental_Health_Model.pkl")
@@ -29,7 +30,7 @@ app.add_middleware(
 class StudentData(BaseModel):
     age: int = Field(..., ge=10, le=100)
     gender: Literal["Male", "Female"]
-    country: str  # used only to derive Grouped_Countries
+    country: str
     academic_level: Literal["Undergraduate", "Graduate", "High School"]
     most_used_platform: Literal[
         "Facebook", "LinkedIn", "Instagram", "Snapchat", "Twitter",
@@ -48,17 +49,19 @@ class StudentData(BaseModel):
 class PredictionResponse(BaseModel):
     predicted_mental_health_score: float
 
+# Serve the HTML page
 @app.get("/")
-def greet():
-    return {"message": "Welcome to Mental Health Score Predictor API"}
+def home():
+    return FileResponse("Mental Health.html")
 
+# Prediction endpoint
 @app.post("/predict", response_model=PredictionResponse)
 def predict(data: StudentData):
-    # Group rare countries into "Other" — must match training logic
-    grouped_country = data.country if data.country in top_countries else "Other"
 
-    # ⚠️ Column name must be "Grouped_Countries" (matches model training)
-    # The raw "Country" column is NOT a model feature — only Grouped_Countries is.
+    grouped_country = (
+        data.country if data.country in top_countries else "Other"
+    )
+
     input_row = pd.DataFrame([{
         "Age": data.age,
         "Gender": data.gender,
@@ -71,8 +74,11 @@ def predict(data: StudentData):
         "Physical_Activity_Hours": data.physical_activity_hours,
         "Sleep_Hours_Per_Night": data.sleep_hours_per_night,
         "Stress_Level": data.stress_level,
-        "Grouped_Countries": grouped_country,  # ✅ Fixed: was "Grouped_country" (wrong case)
+        "Grouped_Countries": grouped_country,
     }])
 
     prediction = model.predict(input_row)[0]
-    return PredictionResponse(predicted_mental_health_score=round(float(prediction), 2))
+
+    return PredictionResponse(
+        predicted_mental_health_score=round(float(prediction), 2)
+    )
