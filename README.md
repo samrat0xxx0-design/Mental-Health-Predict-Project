@@ -1,1 +1,1 @@
-# Mental-Heath-Predict-Project
+# Mental-Health-Predict-Project
