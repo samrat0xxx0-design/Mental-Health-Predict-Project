@@ -56,7 +56,7 @@ class PredictionResponse(BaseModel):
 # Serve the HTML page using your exact repository filename ("Mental Heath.html")
 @app.get("/")
 def home():
-    html_file = BASE_DIR / "Mental Heath.html"
+    html_file = BASE_DIR / "Mental Health.html"
     return FileResponse(html_file)
 
 # Prediction endpoint
